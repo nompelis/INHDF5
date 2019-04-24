@@ -1,0 +1,508 @@
+cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+c **** Subroutine to create a file in parallel
+c **** The routine accepts a communicator over which to make the parallel
+c **** file creation and return error codes. It accepts a filename string
+c **** and returns valid file/prop-list handles on success.
+c Ioannis Nompelis <nompelis@nobelware.com>     Created:       20190423
+c Ioannis Nompelis <nompelis@nobelware.com>     Last modified: 20190423
+cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+
+       Subroutine inUtils_CreateFile( filename, icom,
+     &                        id_alist, id_file, ierr )
+
+       Use MPI
+       Use HDF5
+       Implicit None
+
+       Integer*4,intent(OUT) :: ierr
+       Integer*4,intent(IN) :: icom
+       Character*(*),intent(INOUT) :: filename
+       Integer(hid_t),intent(INOUT) :: id_file, id_alist
+       Integer(hid_t) :: id_clist
+       Integer*4 :: irank,nrank
+       Integer*4 :: ier,iher
+
+
+       call MPI_COMM_RANK( icom, irank, ier )
+       call MPI_COMM_SIZE( icom, nrank, ier )
+#ifdef _DEBUG_
+       if(irank.eq.0) write(*,*) 'Creating file in parallel: ',trim(filename)
+#endif
+
+       !-- turn off HDF5 error printing
+       call  h5eset_auto_f( 0, iher )
+
+       !--- create creation list and file access property list with parallel I/O
+       call h5pcreate_f(H5P_FILE_CREATE_F, id_clist, iher)
+       call h5pcreate_f(H5P_FILE_ACCESS_F, id_alist, iher)
+       call h5pset_fapl_mpio_f(id_alist, icom, MPI_INFO_NULL, iher)
+
+       call h5fcreate_f( filename, H5F_ACC_TRUNC_F, id_file, iher,
+     &                   id_clist, id_alist )
+       call MPI_ALLREDUCE(iher,ierr,1,MPI_INTEGER,MPI_SUM,icom,ier)
+       if(ierr.eq.0) then
+#ifdef _DEBUG_
+          if(irank.eq.0) PRINT*,'Successfully created file in parallel'
+#endif
+       else
+          if(irank.eq.0) PRINT*,'Failed to create file in parallel'
+          ierr = 1
+          if(iher.eq.0) then
+             call h5fclose_f( id_file, iher )
+          else
+             !-- when errors are not trapped, we clean the HDF5 error stack
+             call h5eclear_f( iher )
+          endif
+          call h5pclose_f(id_alist, iher)
+       endif
+
+       call h5pclose_f(id_clist, iher)
+
+       !-- restore default HDF5 library functionality before returning
+       call  h5eset_auto_f( 1, iher )
+
+       return
+       end
+
+cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+c **** Subroutine to close an open parallel file and its prop. lists
+c **** The routine accepts a communicator over which the file is opened
+c **** and the associated property lists.
+c Ioannis Nompelis <nompelis@nobelware.com>     Created:       20190423
+c Ioannis Nompelis <nompelis@nobelware.com>     Last modified: 20190423
+cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+
+       Subroutine inUtils_CloseFile( icom,
+     &                        id_alist, id_file, ierr )
+
+       Use MPI
+       Use HDF5
+       Implicit None
+       Integer*4,intent(OUT) :: ierr
+       Integer*4,intent(IN) :: icom
+       Integer(hid_t),intent(INOUT) :: id_file, id_alist
+       Integer*4 :: irank,nrank
+       Integer*4 :: ier,iher
+
+
+       call MPI_COMM_RANK( icom, irank, ier )
+       call MPI_COMM_SIZE( icom, nrank, ier )
+#ifdef _DEBUG_
+       if(irank.eq.0) write(*,*) 'Closing file'
+#endif
+
+       !-- turn off HDF5 error printing
+       call  h5eset_auto_f( 0, iher )
+
+       call h5fclose_f( id_file, iher )
+       call MPI_ALLREDUCE( iher, ierr, 1, MPI_INTEGER, MPI_SUM, icom, ier )
+       if(ierr.eq.0) then
+#ifdef _DEBUG_
+          if(irank.eq.0) PRINT*,'Successfully closed file in parallel'
+#endif
+       else
+          if(irank.eq.0) PRINT*,'Failed to close file in parallel'
+          ierr = 1
+          if(iher.eq.0) then
+
+          else
+             !-- when errors are not trapped, we clean the HDF5 error stack
+             call h5eclear_f( iher )
+          endif
+       endif
+
+       call h5pclose_f(id_alist, iher)
+
+       !-- restore default HDF5 library functionality before returning
+       call  h5eset_auto_f( 1, iher )
+
+       return
+       end
+
+cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+c **** Subroutine to open an existing file in parallel
+c **** The routine accepts a communicator over which to make the parallel
+c **** file creation and return error codes. It accepts a filename string
+c **** and returns valid file/prop-list handles on success.
+c Ioannis Nompelis <nompelis@nobelware.com>     Created:       20190423
+c Ioannis Nompelis <nompelis@nobelware.com>     Last modified: 20190423
+cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+
+       Subroutine inUtils_OpenFile( filename, icom,
+     &                        id_alist, id_file, ierr )
+
+       Use MPI
+       Use HDF5
+       Implicit None
+       Integer*4,intent(OUT) :: ierr
+       Integer*4,intent(IN) :: icom
+       Character*(*),intent(INOUT) :: filename
+       Integer(hid_t),intent(INOUT) :: id_file, id_alist
+       Integer*4 :: irank,nrank
+       Integer*4 :: ier,iher
+
+
+       call MPI_COMM_RANK( icom, irank, ier )
+       call MPI_COMM_SIZE( icom, nrank, ier )
+#ifdef _DEBUG_
+       if(irank.eq.0) write(*,*) 'Opening file in parallel: ',trim(filename)
+#endif
+
+       !-- turn off HDF5 error printing
+       call  h5eset_auto_f( 0, iher )
+
+       !--- create creation list and file access property list with parallel I/O
+       call h5pcreate_f(H5P_FILE_ACCESS_F, id_alist, iher)
+       call h5pset_fapl_mpio_f(id_alist, icom, MPI_INFO_NULL, iher)
+
+       call h5fopen_f( filename, H5F_ACC_RDWR_F, id_file, iher, id_alist )
+       call MPI_ALLREDUCE(iher,ierr,1,MPI_INTEGER,MPI_SUM,icom,ier)
+       if(ierr.eq.0) then
+#ifdef _DEBUG_
+          if(irank.eq.0) PRINT*,'Successfully opened RDWR file in parallel'
+#endif
+       else
+          if(irank.eq.0) PRINT*,'Failed to open RDWR file in parallel'
+          ierr = 1
+          if(iher.eq.0) then
+             call h5fclose_f( id_file, iher )
+          else
+             !-- when errors are not trapped, we clean the HDF5 error stack
+             call h5eclear_f( iher )
+          endif
+          call h5pclose_f(id_alist, iher)
+       endif
+
+       !-- restore default HDF5 library functionality before returning
+       call  h5eset_auto_f( 1, iher )
+
+       return
+       end
+
+cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+c **** Subroutine to create a group inside an HDF5 handle
+c **** The routine accepts a communicator over which the handle is open
+c **** and the associated property lists.
+c Ioannis Nompelis <nompelis@nobelware.com>     Created:       20190423
+c Ioannis Nompelis <nompelis@nobelware.com>     Last modified: 20190423
+cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+
+       Subroutine inUtils_CreateGroup( grpname, icom,
+     &                        id_alist, id_tree, id_grp, ierr )
+
+       Use MPI
+       Use HDF5
+       Implicit None
+       Integer*4,intent(OUT) :: ierr
+       Character*(*),intent(INOUT) :: grpname
+       Integer*4,intent(IN) :: icom
+       Integer(hid_t),intent(INOUT) :: id_tree, id_alist, id_grp
+       Integer*4 :: irank,nrank
+       Integer*4 :: ier,iher
+
+
+       call MPI_COMM_RANK( icom, irank, ier )
+       call MPI_COMM_SIZE( icom, nrank, ier )
+#ifdef _DEBUG_
+       if(irank.eq.0) write(*,*) 'Creating group in parallel: ',trim(grpname)
+#endif
+
+       !-- turn off HDF5 error printing
+       call  h5eset_auto_f( 0, iher )
+
+       call h5gcreate_f( id_tree, trim(grpname), id_grp, iher )
+       call MPI_ALLREDUCE( iher, ierr, 1, MPI_INTEGER, MPI_SUM, icom, ier )
+       if(ierr.eq.0) then
+#ifdef _DEBUG_
+          if(irank.eq.0) PRINT*,'Successfully created group in parallel'
+#endif
+       else
+          if(irank.eq.0) PRINT*,'Failed to create group in parallel'
+          ierr = 1
+          if(iher.eq.0) then
+
+          else
+             !-- when errors are not trapped, we clean the HDF5 error stack
+             call h5eclear_f( iher )
+          endif
+       endif
+
+       !-- restore default HDF5 library functionality before returning
+       call  h5eset_auto_f( 1, iher )
+
+       return
+       end
+
+cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+c **** Subroutine to close an open group handle in a parallel handle.
+c **** The routine accepts a communicator over which the file is opened
+c **** and the associated property lists.
+c Ioannis Nompelis <nompelis@nobelware.com>     Created:       20190423
+c Ioannis Nompelis <nompelis@nobelware.com>     Last modified: 20190423
+cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+
+       Subroutine inUtils_CloseGroup( icom,
+     &                        id_alist, id_tree, id_grp, ierr )
+
+       Use MPI
+       Use HDF5
+       Implicit None
+       Integer*4,intent(OUT) :: ierr
+       Integer*4,intent(IN) :: icom
+       Integer(hid_t),intent(INOUT) :: id_tree, id_alist, id_grp
+       Integer*4 :: irank,nrank
+       Integer*4 :: ier,iher
+
+       call MPI_COMM_RANK( icom, irank, ier )
+       call MPI_COMM_SIZE( icom, nrank, ier )
+#ifdef _DEBUG_
+       if(irank.eq.0) write(*,*) 'Closing group'
+#endif
+
+       !-- turn off HDF5 error printing
+       call  h5eset_auto_f( 0, iher )
+
+       call h5gclose_f( id_grp, iher )
+       call MPI_ALLREDUCE( iher, ierr, 1, MPI_INTEGER, MPI_SUM, icom, ier )
+       if(ierr.eq.0) then
+#ifdef _DEBUG_
+          if(irank.eq.0) PRINT*,'Successfully closed group in parallel'
+#endif
+       else
+          if(irank.eq.0) PRINT*,'Failed to close group in parallel'
+          ierr = 1
+          if(iher.eq.0) then
+
+          else
+             !-- when errors are not trapped, we clean the HDF5 error stack
+             call h5eclear_f( iher )
+          endif
+       endif
+
+       !-- restore default HDF5 library functionality before returning
+       call  h5eset_auto_f( 1, iher )
+
+       return
+       end
+
+cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+c **** Subroutine to open an existing group handle in a parallel handle.
+c **** The routine accepts a communicator over which the file is opened
+c **** and the associated property lists.
+c Ioannis Nompelis <nompelis@nobelware.com>     Created:       20190423
+c Ioannis Nompelis <nompelis@nobelware.com>     Last modified: 20190423
+cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+
+       Subroutine inUtils_OpenGroup( grpname, icom,
+     &                        id_alist, id_tree, id_grp, ierr )
+
+       Use MPI
+       Use HDF5
+       Use mgds_mpivars
+       Use mgds_hdfvars
+       Implicit None
+       Integer*4,intent(OUT) :: ierr
+       Character*(*),intent(INOUT) :: grpname
+       Integer*4,intent(IN) :: icom
+       Integer(hid_t),intent(INOUT) :: id_tree, id_alist, id_grp
+       Integer*4 :: irank,nrank
+       Integer*4 :: ier,iher
+
+
+       call MPI_COMM_RANK( icom, irank, ier )
+       call MPI_COMM_SIZE( icom, nrank, ier )
+#ifdef _DEBUG_
+       if(irank.eq.0) write(*,*) 'Opening existing group: ',trim(grpname)
+#endif
+
+       !-- turn off HDF5 error printing
+       call  h5eset_auto_f( 0, iher )
+
+       call h5gopen_f( id_tree, trim(grpname), id_grp, iher )
+       call MPI_ALLREDUCE( iher, ierr, 1, MPI_INTEGER, MPI_SUM, icom, ier )
+       if(ierr.eq.0) then
+#ifdef _DEBUG_
+          if(irank.eq.0) PRINT*,'Successfully opened group in parallel'
+#endif
+       else
+          if(irank.eq.0) PRINT*,'Failed to open group in parallel'
+          ierr = 1
+          if(iher.eq.0) then
+             call h5gclose_f( id_grp, iher )
+          else
+             !-- when errors are not trapped, we clean the HDF5 error stack
+             call h5eclear_f( iher )
+          endif
+       endif
+
+       !-- restore default HDF5 library functionality before returning
+       call  h5eset_auto_f( 1, iher )
+
+       return
+       end
+
+cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+c **** Subroutine to create a dataset inside an HDF5 handle
+c **** The routine accepts a communicator over which the handle is open
+c Ioannis Nompelis <nompelis@nobelware.com>     Created:       20190424
+c Ioannis Nompelis <nompelis@nobelware.com>     Last modified: 20190424
+cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+
+       Subroutine inUtils_CreateDataset( dataname, icom,
+     &                        id_tree, id_type, id_space, id_data, ierr )
+
+       Use MPI
+       Use HDF5
+       Implicit None
+       Integer*4,intent(OUT) :: ierr
+       Character*(*),intent(INOUT) :: dataname
+       Integer*4,intent(IN) :: icom
+       Integer(hid_t),intent(INOUT) :: id_tree, id_type, id_space, id_data
+       Integer*4 :: irank,nrank
+       Integer*4 :: ier,iher
+
+
+       call MPI_COMM_RANK( icom, irank, ier )
+       call MPI_COMM_SIZE( icom, nrank, ier )
+#ifdef _DEBUG_
+       if(irank.eq.0) write(*,*) 'Creating dataset in parallel: ',trim(dataname)
+#endif
+
+       !-- turn off HDF5 error printing
+       call  h5eset_auto_f( 0, iher )
+
+       call h5dcreate_f( id_tree, trim(dataname),
+     &                   id_type, id_space, id_data, iher )
+       call MPI_ALLREDUCE( iher, ierr, 1, MPI_INTEGER, MPI_SUM, icom, ier )
+       if(ierr.eq.0) then
+#ifdef _DEBUG_
+          if(irank.eq.0) PRINT*,'Successfully created dataset in parallel'
+#endif
+       else
+          if(irank.eq.0) PRINT*,'Failed to create dataset in parallel'
+          ierr = 1
+          if(iher.eq.0) then
+             call h5dclose_f( id_data, iher )
+          else
+             !-- when errors are not trapped, we clean the HDF5 error stack
+             call h5eclear_f( iher )
+          endif
+       endif
+
+       !-- restore default HDF5 library functionality before returning
+       call  h5eset_auto_f( 1, iher )
+
+       return
+       end
+
+cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+c **** Subroutine to close an open dataset
+c **** The routine accepts a communicator over which the handle is open
+c Ioannis Nompelis <nompelis@nobelware.com>     Created:       20190424
+c Ioannis Nompelis <nompelis@nobelware.com>     Last modified: 20190424
+cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+
+       Subroutine inUtils_CloseDataset( icom, id_data, ierr )
+
+       Use MPI
+       Use HDF5
+       Implicit None
+       Integer*4,intent(OUT) :: ierr
+       Integer*4,intent(IN) :: icom
+       Integer(hid_t),intent(INOUT) :: id_data
+       Integer*4 :: irank,nrank
+       Integer*4 :: ier,iher
+
+
+       call MPI_COMM_RANK( icom, irank, ier )
+       call MPI_COMM_SIZE( icom, nrank, ier )
+#ifdef _DEBUG_
+       if(irank.eq.0) write(*,*) 'Closing dataset in parallel'
+#endif
+
+       !-- turn off HDF5 error printing
+       call  h5eset_auto_f( 0, iher )
+
+       call h5dclose_f( id_data, iher )
+       call MPI_ALLREDUCE( iher, ierr, 1, MPI_INTEGER, MPI_SUM, icom, ier )
+       if(ierr.eq.0) then
+#ifdef _DEBUG_
+          if(irank.eq.0) PRINT*,'Successfully closed dataset in parallel'
+#endif
+       else
+          if(irank.eq.0) PRINT*,'Failed to close dataset in parallel'
+          ierr = 1
+          if(iher.eq.0) then
+
+          else
+             !-- when errors are not trapped, we clean the HDF5 error stack
+             call h5eclear_f( iher )
+          endif
+       endif
+
+       !-- restore default HDF5 library functionality before returning
+       call  h5eset_auto_f( 1, iher )
+
+       return
+       end
+
+cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+c **** Subroutine to open an existing dataset inside an HDF5 handle
+c **** The routine accepts a communicator over which the handle is open
+c Ioannis Nompelis <nompelis@nobelware.com>     Created:       20190424
+c Ioannis Nompelis <nompelis@nobelware.com>     Last modified: 20190424
+cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+
+       Subroutine inUtils_OpenDataset( dataname, icom,
+     &                        id_tree, id_data, id_type, id_space, ierr )
+
+       Use MPI
+       Use HDF5
+       Implicit None
+       Integer*4,intent(OUT) :: ierr
+       Character*(*),intent(INOUT) :: dataname
+       Integer*4,intent(IN) :: icom
+       Integer(hid_t),intent(INOUT) :: id_tree, id_type, id_space, id_data
+       Integer*4 :: irank,nrank
+       Integer*4 :: ier,iher
+
+
+       call MPI_COMM_RANK( icom, irank, ier )
+       call MPI_COMM_SIZE( icom, nrank, ier )
+#ifdef _DEBUG_
+       if(irank.eq.0) write(*,*) 'Opening existing dataset in parallel: ',
+     &                        trim(dataname)
+#endif
+
+       !-- turn off HDF5 error printing
+       call  h5eset_auto_f( 0, iher )
+
+       call h5dopen_f( id_tree, trim(dataname), id_data, iher )
+       call MPI_ALLREDUCE( iher, ierr, 1, MPI_INTEGER, MPI_SUM, icom, ier )
+       if(ierr.eq.0) then
+#ifdef _DEBUG_
+          if(irank.eq.0) PRINT*,'Successfully opened dataset in parallel'
+#endif
+       else
+          if(irank.eq.0) PRINT*,'Failed to open dataset in parallel'
+          ierr = 1
+          if(iher.eq.0) then
+             call h5dclose_f( id_data, iher )
+          else
+             !-- when errors are not trapped, we clean the HDF5 error stack
+             call h5eclear_f( iher )
+          endif
+       endif
+
+       !-- retrieve the space of the dataset
+       call h5dget_space_f( id_data, id_space, iher )
+
+       !-- retrieve the datatype in the dataset
+       call h5dget_type_f( id_data, id_type, iher )
+
+       !-- restore default HDF5 library functionality before returning
+       call  h5eset_auto_f( 1, iher )
+
+       return
+       end
+
