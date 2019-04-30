@@ -298,8 +298,6 @@ cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 
        Use MPI
        Use HDF5
-       Use mgds_mpivars
-       Use mgds_hdfvars
        Implicit None
        Integer*4,intent(OUT) :: ierr
        Character*(*),intent(INOUT) :: grpname
@@ -525,7 +523,7 @@ cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
        Integer*4,intent(OUT) :: ierr
        Integer*4,intent(IN) :: icom, nd
        Integer(hid_t),intent(IN) :: id_data, id_type, id_space
-       Integer(hsize_t),intent(IN) :: icnt(nds), ioff(nds)
+       Integer(hsize_t),intent(IN) :: icnt(nd), ioff(nd)
        Type(C_PTR),intent(IN) :: data
        Integer(hid_t) :: id_dtype, id_dspace, id_mem, id_plist
        Integer*4 :: nds,ndd                                         ! rank check
@@ -662,7 +660,7 @@ cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
        Integer*4,intent(OUT) :: ierr
        Integer*4,intent(IN) :: icom, nd
        Integer(hid_t),intent(IN) :: id_data, id_type, id_space
-       Integer(hsize_t),intent(IN) :: icnt(nds), ioff(nds)
+       Integer(hsize_t),intent(IN) :: icnt(nd), ioff(nd)
        Type(C_PTR),intent(INOUT) :: data
        Integer(hid_t) :: id_dtype, id_dspace, id_mem, id_plist
        Integer*4 :: nds,ndd                                         ! rank check
