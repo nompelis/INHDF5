@@ -21,7 +21,7 @@ are useful because there is a single Fortran interface that wraps the HDF5 C
 calls that do the actual wrok. (This is not as complicated as it sounds.) The
 Fortran user needs only to specify the C-pointer of the begining of the buffer
 of data that is to be written (or read), like so:
-
+```
       Real*8 :: buffer(10)
       Type(C_PTR) :: ptr
       ptr = C_LOC( buffer)
@@ -29,6 +29,7 @@ of data that is to be written (or read), like so:
       Integer*4 :: int_buffer(10)
       Type(C_PTR) :: ptr
       ptr = C_LOC( int_buffer)
+```
 
 This makes the API (and this library) agnostic to the data type that is to
 be written or read.
