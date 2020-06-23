@@ -11,7 +11,7 @@ MPIF90 = mpif90
 
 
 all:
-#$(MPIF90) $(FOPTS) $(HDF_INCLUDE) -c inUtils_HDF5_fortran.F
+	$(MPIF90) $(FOPTS) $(HDF_INCLUDE) -c inUtils_HDF5_fortran.F
 	$(MPIF90) $(COPTS) $(HDF_INCLUDE) -c inUtils_HDF5.c
 
 exam1:
