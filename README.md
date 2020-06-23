@@ -1,10 +1,10 @@
 # INHDF5
-A mini API for using (programming) the parallel HDF5 library in Fortran
+A mini API for using (programming) the parallel HDF5 library in Fortran, C/C++
 
 SUMMARY
 
 1. Quick ways to create and use files/groups/datasets in a distributed parallel
-program written in Fortran.
+program written in C/C++ and Fortran.
 
 2. Writes and reads of either a portion or the entire dataset can be done, and
 both can be throttled by having collective write/read operations be wrapped
@@ -70,3 +70,8 @@ IN 2019/04/29
 Added an example and a Makefile.
 
 IN 2020/06/16
+
+
+Augmented the API to be used in C/C++ code and added an example.
+
+IN 2020/06/23
