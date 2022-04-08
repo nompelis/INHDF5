@@ -1,7 +1,7 @@
 /******************************************************************************
   *** Function prototypes for an example of how to use the INHDF5 API
   *** 
-  *** Copyright (c) 2020 Ioannis Nompelis
+  *** Copyright (c) 2020-2022 Ioannis Nompelis
   *** Ioannis Nompelis <nompelis@nobelware.com>
  ******************************************************************************/
 
@@ -20,6 +20,11 @@ int inUtils_HDF_CreateFile( char* filename, MPI_Comm comm,
 int inUtils_HDF_OpenFile( char* filename, MPI_Comm comm,
                           hid_t* id_alist, 
                           hid_t* id_file );
+
+int inUtils_HDF_OpenFileOpt( char* filename, MPI_Comm comm,
+                             hid_t* id_alist, 
+                             hid_t* id_file,
+                             int iop );
 
 int inUtils_HDF_CloseFile( MPI_Comm comm,
                            hid_t* id_alist,

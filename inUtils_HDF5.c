@@ -1,7 +1,7 @@
 /******************************************************************************
   *** An example of how to use the INHDF5 API
   *** 
-  *** Copyright (c) 2020 Ioannis Nompelis
+  *** Copyright (c) 2020-2022 Ioannis Nompelis
   *** Ioannis Nompelis <nompelis@nobelware.com>
  ******************************************************************************/
 
@@ -77,6 +77,14 @@ int inUtils_HDF_OpenFile( char* filename, MPI_Comm comm,
                           hid_t* id_alist, 
                           hid_t* id_file )
 {
+   return inUtils_HDF_OpenFileOpt( filename, comm, id_alist, id_file, 1 );
+}
+
+int inUtils_HDF_OpenFileOpt( char* filename, MPI_Comm comm,
+                             hid_t* id_alist, 
+                             hid_t* id_file,
+                             int iop )
+{
    int ierr=0;
    int irank,nrank;
    void *old_err_client_data;   // to store the old error handler
@@ -99,7 +107,11 @@ int inUtils_HDF_OpenFile( char* filename, MPI_Comm comm,
    H5Pset_fapl_mpio( id_alist_tmp, comm, MPI_INFO_NULL );
 
    // open the file
-   id_file_tmp = H5Fopen( filename, H5F_ACC_RDWR, id_alist_tmp );
+   if( iop == 0 ) {
+      id_file_tmp = H5Fopen( filename, H5F_ACC_RDONLY, id_alist_tmp );
+   } else {
+      id_file_tmp = H5Fopen( filename, H5F_ACC_RDWR, id_alist_tmp );
+   }
    if( id_file_tmp < 0 ) ierr = 1;
    MPI_Allreduce( MPI_IN_PLACE, &ierr, 1, MPI_INT, MPI_SUM, comm );
    if( ierr != 0 ) {
