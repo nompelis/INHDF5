@@ -15,7 +15,7 @@
 #include "inUtils_HDF5.h"
 
 
-int inUtils_HDF_CreateFile( char* filename, MPI_Comm comm,
+int inUtils_HDF_CreateFile( const char* filename, MPI_Comm comm,
                             hid_t* id_alist, 
                             hid_t* id_file )
 {
@@ -73,14 +73,14 @@ return_point:
 // (closes the access property list as well)
 //
 
-int inUtils_HDF_OpenFile( char* filename, MPI_Comm comm,
+int inUtils_HDF_OpenFile( const char* filename, MPI_Comm comm,
                           hid_t* id_alist, 
                           hid_t* id_file )
 {
    return inUtils_HDF_OpenFileOpt( filename, comm, id_alist, id_file, 1 );
 }
 
-int inUtils_HDF_OpenFileOpt( char* filename, MPI_Comm comm,
+int inUtils_HDF_OpenFileOpt( const char* filename, MPI_Comm comm,
                              hid_t* id_alist, 
                              hid_t* id_file,
                              int iop )
@@ -191,7 +191,7 @@ return_point:
 // function to create a group within a handle
 //
 
-int inUtils_HDF_CreateGroup( char* grpname, MPI_Comm comm,
+int inUtils_HDF_CreateGroup( const char* grpname, MPI_Comm comm,
                              hid_t id_tree,
                              hid_t* id_grp )
 {
@@ -283,7 +283,7 @@ return_point:
 // function to open a group in a handle and return handle
 //
 
-int inUtils_HDF_OpenGroup( char* grpname, MPI_Comm comm,
+int inUtils_HDF_OpenGroup( const char* grpname, MPI_Comm comm,
                            hid_t id_tree,
                            hid_t* id_grp )
 {
@@ -335,7 +335,7 @@ return_point:
 // function to create a dataset of the incoming data type
 //
 
-int inUtils_HDF_CreateDataset( char* dataname, MPI_Comm comm,
+int inUtils_HDF_CreateDataset( const char* dataname, MPI_Comm comm,
                                hid_t id_tree,
                                hid_t id_type,
                                hid_t id_space,
@@ -430,7 +430,7 @@ return_point:
 // (returns space and type of the data)
 //
 
-int inUtils_HDF_OpenDataset( char* dataname, MPI_Comm comm, hid_t id_tree,
+int inUtils_HDF_OpenDataset( const char* dataname, MPI_Comm comm, hid_t id_tree,
                              hid_t* id_data,
                              hid_t* id_type,
                              hid_t* id_space )
