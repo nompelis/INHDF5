@@ -102,7 +102,7 @@ int inUtils_HDF_OpenFileOpt( const char* filename, MPI_Comm comm,
    H5Eset_auto( id_estack, NULL, NULL );
 
 
-   // create creation list and file access property list with parallel I/O
+   // create file access property list with parallel I/O
    id_alist_tmp = H5Pcreate( H5P_FILE_ACCESS );
    H5Pset_fapl_mpio( id_alist_tmp, comm, MPI_INFO_NULL );
 
@@ -304,7 +304,7 @@ int inUtils_HDF_OpenGroup( const char* grpname, MPI_Comm comm,
    H5Eset_auto( id_estack, NULL, NULL );
 
    // open the group
-   id_grp_tmp = H5Gopen( id_tree, grpname, H5P_DEFAULT );
+   id_grp_tmp = H5Gopen( id_tree, grpname );
    if( id_grp_tmp < 0 ) ierr = 1;
    MPI_Allreduce( MPI_IN_PLACE, &ierr, 1, MPI_INT, MPI_SUM, comm );
    if( ierr != 0 ) {
@@ -452,7 +452,7 @@ int inUtils_HDF_OpenDataset( const char* dataname, MPI_Comm comm, hid_t id_tree,
    H5Eset_auto( id_estack, NULL, NULL );
 
    // open the dataset in parallel
-   id_data_tmp = H5Dopen( id_tree, dataname, H5P_DEFAULT ); // CHECK THIS!
+   id_data_tmp = H5Dopen( id_tree, dataname );
    if( id_data_tmp < 0 ) ierr = 1;
    MPI_Allreduce( MPI_IN_PLACE, &ierr, 1, MPI_INT, MPI_SUM, comm );
    if( ierr != 0 ) {
@@ -468,10 +468,20 @@ int inUtils_HDF_OpenDataset( const char* dataname, MPI_Comm comm, hid_t id_tree,
    // retrieve the datatype in the dataset
    id_type_tmp = H5Dget_type( id_data_tmp );
 
+   // Potentially provide info about the dataset using these handles...
+
    // copy the handles to return
    memcpy( id_data, &id_data_tmp, sizeof(hid_t) );
-   memcpy( id_type, &id_type_tmp, sizeof(hid_t) );
-   memcpy( id_space, &id_space_tmp, sizeof(hid_t) );
+   if( id_type != NULL ) {
+      memcpy( id_type, &id_type_tmp, sizeof(hid_t) );
+   } else {
+      H5Tclose( id_type_tmp );
+   }
+   if( id_space != NULL ) {
+      memcpy( id_space, &id_space_tmp, sizeof(hid_t) );
+   } else {
+      H5Sclose( id_space_tmp );
+   }
 
 return_point:
    // restore previous error handler
