@@ -1,7 +1,7 @@
 /******************************************************************************
   *** An example of how to use the INHDF5 API
   *** 
-  *** Copyright (c) 2020-2022 Ioannis Nompelis
+  *** Copyright (c) 2020-2024 Ioannis Nompelis
   *** Ioannis Nompelis <nompelis@nobelware.com>
  ******************************************************************************/
 
@@ -485,10 +485,11 @@ return_point:
 
 
 //
-// function to write to a dataset that has been opened in parallel
+// functions to write to a dataset that has been opened in parallel
 //
 
-int inUtils_HDF_DatasetWrite( MPI_Comm comm, hid_t id_data,
+int inUtils_HDF_DatasetWriteCall( int iop,
+                              MPI_Comm comm, hid_t id_data,
                               hid_t id_type, hid_t id_space,
                               int nd,
                               hsize_t* ioff,
@@ -575,9 +576,16 @@ int inUtils_HDF_DatasetWrite( MPI_Comm comm, hid_t id_data,
       goto return_point;
    }
 
-   // create a transfer property list with parallel I/O
-   id_plist = H5Pcreate( H5P_DATASET_XFER );
-   H5Pset_dxpl_mpio( id_plist, H5FD_MPIO_COLLECTIVE );
+   // create a transfer property list with or without parallel I/O
+   if( iop == 0 ) {
+      id_plist = H5Pcreate( H5P_DATASET_XFER );
+      H5Pset_dxpl_mpio( id_plist, H5FD_MPIO_COLLECTIVE );
+   } else if( iop == 1 ) {
+      id_plist = H5Pcreate( H5P_DATASET_XFER );
+      H5Pset_dxpl_mpio( id_plist, H5FD_MPIO_INDEPENDENT );
+   } else {
+      id_plist = H5P_DEFAULT;
+   }
 
    // create a memory dataspace
    id_mem = H5Screate_simple( nd, icnt, icnt );
@@ -602,7 +610,7 @@ int inUtils_HDF_DatasetWrite( MPI_Comm comm, hid_t id_data,
 
    // drop handles no longer needed
    H5Sclose( id_mem );
-   H5Pclose( id_plist );
+   if( iop == 0 || iop == 1 ) H5Pclose( id_plist );
 
    //drop the sizes array
    free( idims );
@@ -617,12 +625,24 @@ return_point:
    return ierr;
 }
 
+// the high level call
+int inUtils_HDF_DatasetWrite( MPI_Comm comm, hid_t id_data,
+                              hid_t id_type, hid_t id_space,
+                              int nd,
+                              hsize_t* ioff,
+                              hsize_t* icnt,
+                              void* data )
+{
+   return inUtils_HDF_DatasetWriteCall( 0, comm, id_data, id_type, id_space,
+                                        nd, ioff, icnt, data );
+}
 
 //
-// function to read from a dataset that has been opened in parallel
+// functions to read from a dataset that has been opened in parallel
 //
 
-int inUtils_HDF_DatasetRead( MPI_Comm comm, hid_t id_data,
+int inUtils_HDF_DatasetReadCall( int iop,
+                             MPI_Comm comm, hid_t id_data,
                              hid_t id_type, hid_t id_space,
                              int nd,
                              hsize_t* ioff,
@@ -710,8 +730,16 @@ int inUtils_HDF_DatasetRead( MPI_Comm comm, hid_t id_data,
    }
 
    // create a transfer property list with parallel I/O
-   id_plist = H5Pcreate( H5P_DATASET_XFER );
-   H5Pset_dxpl_mpio( id_plist, H5FD_MPIO_COLLECTIVE );
+   // create a transfer property list with or without parallel I/O
+   if( iop == 0 ) {
+      id_plist = H5Pcreate( H5P_DATASET_XFER );
+      H5Pset_dxpl_mpio( id_plist, H5FD_MPIO_COLLECTIVE );
+   } else if( iop == 1 ) {
+      id_plist = H5Pcreate( H5P_DATASET_XFER );
+      H5Pset_dxpl_mpio( id_plist, H5FD_MPIO_INDEPENDENT );
+   } else {
+      id_plist = H5P_DEFAULT;
+   }
 
    // create a memory dataspace
    id_mem = H5Screate_simple( nd, icnt, icnt );
@@ -736,7 +764,7 @@ int inUtils_HDF_DatasetRead( MPI_Comm comm, hid_t id_data,
 
    // drop handles no longer needed
    H5Sclose( id_mem );
-   H5Pclose( id_plist );
+   if( iop == 0 || iop == 1 ) H5Pclose( id_plist );
 
    //drop the sizes array
    free( idims );
@@ -750,3 +778,16 @@ return_point:
 
    return ierr;
 }
+
+// the high level call
+int inUtils_HDF_DatasetRead( MPI_Comm comm, hid_t id_data,
+                             hid_t id_type, hid_t id_space,
+                             int nd,
+                             hsize_t* ioff,
+                             hsize_t* icnt,
+                             void* data )
+{
+   return inUtils_HDF_DatasetReadCall( 0, comm, id_data, id_type, id_space,
+                                       nd, ioff, icnt, data );
+}
+
