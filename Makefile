@@ -2,11 +2,11 @@ HDF_INCLUDE = -I $(HDF5_HOME)/include
 HDF_LIB = -L $(HDF5_HOME)/lib
 
 MPICC = mpicc
- COPTS = -Wall -O0
+ COPTS = -g -Wall -O0
 #COPTS += -D  _DEBUG_
 
 MPIF90 = mpif90
- FOPTS = -Wall -ffixed-line-length-132 -O0 -fbounds-check -fcheck=all
+ FOPTS = -g -Wall -ffixed-line-length-132 -O0 -fbounds-check -fcheck=all
 #FOPTS += -D  _DEBUG_
 
 
