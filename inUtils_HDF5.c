@@ -304,7 +304,7 @@ int inUtils_HDF_OpenGroup( const char* grpname, MPI_Comm comm,
    H5Eset_auto( id_estack, NULL, NULL );
 
    // open the group
-   id_grp_tmp = H5Gopen( id_tree, grpname );
+   id_grp_tmp = H5Gopen( id_tree, grpname, H5P_DEFAULT );
    if( id_grp_tmp < 0 ) ierr = 1;
    MPI_Allreduce( MPI_IN_PLACE, &ierr, 1, MPI_INT, MPI_SUM, comm );
    if( ierr != 0 ) {
@@ -452,7 +452,7 @@ int inUtils_HDF_OpenDataset( const char* dataname, MPI_Comm comm, hid_t id_tree,
    H5Eset_auto( id_estack, NULL, NULL );
 
    // open the dataset in parallel
-   id_data_tmp = H5Dopen( id_tree, dataname );
+   id_data_tmp = H5Dopen( id_tree, dataname, H5P_DEFAULT );
    if( id_data_tmp < 0 ) ierr = 1;
    MPI_Allreduce( MPI_IN_PLACE, &ierr, 1, MPI_INT, MPI_SUM, comm );
    if( ierr != 0 ) {
