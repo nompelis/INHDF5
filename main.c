@@ -17,6 +17,11 @@
 // a demo that uses 2 ranks (processes) found in "test.c"
 int oldtest();
 
+// a deme that handles a 2D dataset
+int test( MPI_Comm* );
+
+// some testing...
+int test2( MPI_Comm* );
 
 int main( int argc, char *argv[] )
 {
@@ -33,6 +38,8 @@ int main( int argc, char *argv[] )
 
 
 // (void) oldtest();
+// (void) test( &comm );
+   (void) test2( &comm );
 
 
    MPI_Finalize();

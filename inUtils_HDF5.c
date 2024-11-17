@@ -39,13 +39,14 @@ int inUtils_HDF_CreateFile( const char* filename, MPI_Comm comm,
    id_clist_tmp = H5Pcreate( H5P_FILE_CREATE );
    id_alist_tmp = H5Pcreate( H5P_FILE_ACCESS );
    H5Pset_fapl_mpio( id_alist_tmp, comm, MPI_INFO_NULL );
+// H5Pset_fapl_mpiposix( id_alist_tmp, comm );  // not avail. in my library
 
    id_file_tmp = H5Fcreate( filename, H5F_ACC_TRUNC,
                             id_clist_tmp, id_alist_tmp );
    if( id_file_tmp < 0 ) ierr = 1;
    MPI_Allreduce( MPI_IN_PLACE, &ierr, 1, MPI_INT, MPI_SUM, comm );
    if( ierr != 0 ) {
-      if( irank == 0 ) printf("Could not create file: \"%s\"\n",filename);
+      if( irank == 0 ) printf(" e  Could not create file: \"%s\"\n",filename);
       if( id_file_tmp >= 0 ) H5Fclose( id_file_tmp );
       H5Pclose( id_alist_tmp );
       H5Pclose( id_clist_tmp );
