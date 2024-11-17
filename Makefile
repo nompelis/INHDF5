@@ -19,7 +19,8 @@ exam1:
            $(HDF_LIB) -lhdf5 -lhdf5_fortran
 
 exam2:
-	$(MPIF90) $(COPTS) $(HDF_INCLUDE) main.c inUtils_HDF5.o \
+	$(MPIF90) $(COPTS) $(HDF_INCLUDE) -c test.c
+	$(MPIF90) $(COPTS) $(HDF_INCLUDE) main.c test.o inUtils_HDF5.o \
            $(HDF_LIB) -lhdf5
 
 clean:
